@@ -1,0 +1,7 @@
+target/
+**/*.rs.bk
+Cargo.lock.bak
+*.ifb
+*.vault
+.env
+.DS_Store

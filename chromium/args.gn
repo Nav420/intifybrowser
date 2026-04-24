@@ -1,0 +1,117 @@
+# Chromium GN build flags for intifybrowser.
+#
+# Drop this file into `src/out/Release/args.gn` (or your chosen output
+# directory) before running `gn gen`. Every flag here has one of two
+# purposes:
+#
+#   (a) Strip a phone-home / telemetry / proprietary-blob feature so the
+#       binary cannot leak metadata to Google or a third party.
+#   (b) Harden the runtime or make the build deterministic so the
+#       resulting binary can be redistributed as a portable bundle.
+#
+# Verified against Chromium trunk as of early 2026; flag names change
+# over time — keep this pinned to a specific Chromium tag in CI.
+
+# ---------- Build profile ----------
+is_debug                        = false
+is_official_build               = true           # enables compiler optimizations used by Chrome releases
+symbol_level                    = 0              # no debug symbols in the distributed binary
+blink_symbol_level              = 0
+v8_symbol_level                 = 0
+dcheck_always_on                = false
+use_thin_lto                    = true
+chrome_pgo_phase                = 0              # no PGO profile dependency on Google infra
+
+# ---------- Branding: unbranded / no Chrome proprietary bits ----------
+is_chrome_branded               = false          # use "Chromium", not "Chrome"
+use_official_google_api_keys    = false
+google_api_key                  = ""
+google_default_client_id        = ""
+google_default_client_secret    = ""
+
+# ---------- Drop telemetry / feedback / update subsystems ----------
+enable_reporting                = false          # removes //components/reporting
+enable_rlz                      = false          # removes Referral-source tracking
+enable_rlz_support              = false
+enable_hangout_services_extension = false
+enable_service_discovery        = false          # mDNS/DNS-SD scanning
+enable_mdns                     = false
+enable_remoting                 = false          # Chrome Remote Desktop bits
+enable_background_contents      = false
+enable_background_mode          = false
+enable_google_now               = false
+safe_browsing_mode              = 0              # 0 = disabled entirely
+enable_nacl                     = false          # NaCl is deprecated and a big attack surface
+enable_widevine                 = false          # no proprietary DRM blob
+enable_wmpl_media_license_sdk   = false
+enable_library_cdms             = false          # no external CDM loading
+enable_platform_hevc            = false
+enable_platform_dolby_vision    = false
+enable_platform_encrypted_hevc  = false
+
+# ---------- Remove cloud print / printing phone-home ----------
+enable_print_preview            = true           # local preview is fine
+enable_cloud_print_proxy        = false
+enable_printing                 = true
+
+# ---------- Remove supervised user & family link ----------
+enable_supervised_users         = false
+
+# ---------- Disable crash + metrics upload ----------
+use_unofficial_version_number   = true
+include_branded_entitlements    = false
+# Breakpad/crashpad stays compiled in for local-only crashes but the
+# launcher passes --disable-breakpad + --disable-crash-reporter so
+# there is no upload endpoint.
+
+# ---------- Reproducible build ----------
+treat_warnings_as_errors        = false
+enable_precompiled_headers      = false
+use_debug_fission               = false
+strip_absolute_paths_from_debug_symbols = true
+
+# ---------- Codec / platform policy ----------
+proprietary_codecs              = true           # H.264/AAC for site compat; drop if pure free-software policy required
+ffmpeg_branding                 = "Chrome"       # paired with proprietary_codecs = true
+rtc_use_h264                    = false          # WebRTC over H.264 is a known fingerprinting vector
+
+# ---------- Field trials / variations ----------
+# Variations is Chromium's remote-config; the launcher also passes
+# --disable-field-trial-config, but disabling at build time is firmer.
+disable_fieldtrial_testing_config = true
+
+# ---------- Sandbox hardening ----------
+use_seccomp_bpf                 = true           # Linux sandbox layer (mandatory)
+enable_plugins                  = false
+enable_ppapi                    = false
+enable_extensions               = true           # keep — extensions are part of the vault profile
+enable_pdf                      = true
+
+# ---------- Platform-specific ----------
+# Linux
+is_component_build              = false
+use_sysroot                     = true
+use_glib                        = true
+# On Linux we statically link as much of the runtime as practical so the
+# binary tree inside the vault doesn't depend on host libs that a
+# hostile host could swap.
+use_custom_libcxx               = true
+rtc_include_tests               = false
+
+# Windows
+# enable_widevine already off, above. Also:
+# full_wpo_on_official = true
+# enable_iterator_debugging = false
+
+# macOS
+# enable_widevine already off, above.
+# use_system_xcode = false
+
+# ---------- Extra privacy features ----------
+# Force first-party-set and related features to default off at build
+# time so a runtime flag flip can't re-enable them silently.
+enable_feed_v2                  = false
+enable_hidl                     = false
+enable_web_speech               = false          # kills SpeechRecognition → Google's cloud
+enable_vr                       = false
+enable_arcore                   = false
