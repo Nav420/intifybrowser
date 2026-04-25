@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<!--
+  WiX source for the intifybrowser Windows MSI installer.
+
+  This file is consumed by `cargo wix` (https://github.com/volks73/cargo-wix).
+  Run `packaging/windows/build-msi.ps1` to produce the MSI; the script
+  invokes cargo-wix which expands variables like $(var.CargoTargetBinDir)
+  and embeds the binary built by `cargo build --release`.
+
+  The Upgrade Code is stable across versions — never change it. The
+  Product Id is "*" so each build gets a fresh GUID, which lets the MSI
+  upgrader replace older versions in place.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+    <Product
+        Id="*"
+        Name="intifybrowser"
+        Manufacturer="Nav420"
+        Version="$(var.Version)"
+        UpgradeCode="AAD6241B-41E5-4F3C-82FA-A6C2B2773B15"
+        Language="1033"
+        Codepage="1252">
+
+        <Package
+            Id="*"
+            Keywords="Installer"
+            Description="intifybrowser encrypted Chromium launcher"
+            Manufacturer="Nav420"
+            InstallerVersion="500"
+            Languages="1033"
+            Compressed="yes"
+            InstallScope="perMachine"
+            SummaryCodepage="1252"/>
+
+        <MajorUpgrade
+            Schedule="afterInstallInitialize"
+            DowngradeErrorMessage="A newer version of intifybrowser is already installed."/>
+
+        <Media Id="1" Cabinet="ifb.cab" EmbedCab="yes" CompressionLevel="high"/>
+
+        <!-- Install layout: %ProgramFiles%\intifybrowser\ifb.exe -->
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLDIR" Name="intifybrowser">
+                    <Component Id="MainExecutable"
+                               Guid="CEC1D2BD-AC6B-4B55-80AF-7AEF3684DFE8"
+                               Win64="yes">
+                        <File
+                            Id="ifb.exe"
+                            Name="ifb.exe"
+                            DiskId="1"
+                            Source="$(var.CargoTargetBinDir)\ifb.exe"
+                            KeyPath="yes"/>
+                        <!-- Append install dir to system PATH so `ifb` is on the shell. -->
+                        <Environment
+                            Id="PATH"
+                            Name="PATH"
+                            Value="[INSTALLDIR]"
+                            Permanent="no"
+                            Part="last"
+                            Action="set"
+                            System="yes"/>
+                    </Component>
+
+                    <Component Id="ReadmeFile"
+                               Guid="*"
+                               Win64="yes">
+                        <File
+                            Id="README.md"
+                            Name="README.md"
+                            DiskId="1"
+                            Source="$(var.CargoProjectRoot)\..\README.md"
+                            KeyPath="yes"/>
+                    </Component>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <Feature Id="Default"
+                 Title="intifybrowser launcher"
+                 Description="The ifb.exe encrypted Chromium launcher binary."
+                 Level="1"
+                 ConfigurableDirectory="INSTALLDIR"
+                 AllowAdvertise="no"
+                 Display="expand"
+                 Absent="disallow">
+            <ComponentRef Id="MainExecutable"/>
+            <ComponentRef Id="ReadmeFile"/>
+        </Feature>
+
+        <!-- Add/Remove Programs entry. -->
+        <Property Id="ARPCOMMENTS"
+                  Value="Portable self-encrypting Chromium launcher (VeraCrypt-style vault)."/>
+        <Property Id="ARPURLINFOABOUT"
+                  Value="https://github.com/Nav420/intifybrowser"/>
+        <Property Id="ARPNOMODIFY" Value="1"/>
+        <Property Id="ARPNOREPAIR" Value="1"/>
+
+        <!--
+          No license dialog: the project license is TBD. Add a WixUI_Minimal
+          reference once a LICENSE.rtf is added under packaging/windows/.
+        -->
+        <UIRef Id="WixUI_InstallDir"/>
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR"/>
+
+    </Product>
+</Wix>

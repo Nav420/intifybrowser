@@ -43,3 +43,18 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+# cargo-wix configuration. Run `cargo wix` from launcher/ to build the MSI;
+# see packaging/windows/main.wxs for the layout. Pinned options:
+#
+#   include      — path to the WiX source(s). Resolved relative to the
+#                  launcher/ crate directory.
+#   no-build     — false: cargo-wix will run `cargo build --release` first.
+#   compiler-args / linker-args — none; we want WiX defaults.
+#   eula / license — left to default (no dialog) until a LICENSE.rtf exists.
+#
+# The MSI lands at launcher/target/wix/intifybrowser-<version>-x86_64.msi.
+[package.metadata.wix]
+include = ["../packaging/windows/main.wxs"]
+output = "target/wix/intifybrowser-${version}-x86_64.msi"
+no-build = false

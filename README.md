@@ -17,7 +17,8 @@ of Chromium; all hardening flags live in `chromium/args.gn`.
 | `launcher/` | Rust wrapper: KDF, unlock, mount, child supervision, scrub |
 | `chromium/args.gn` | GN build flags for a telemetry-free, portable Chromium |
 | `install/linux.sh` | Linux installer (builds via cargo, `setcap cap_ipc_lock`) |
-| `install/windows.ps1` | Windows installer (builds via cargo, adds to PATH) |
+| `install/windows.ps1` | Windows dev installer (builds via cargo, adds to PATH) |
+| `packaging/windows/` | WiX source + `build-msi.ps1` to produce a redistributable `.msi` |
 | `docs/ARCHITECTURE.md` | System flow map, container layout, trust boundaries |
 | `docs/SECURITY.md` | Threat model + leak-point risk assessment |
 
@@ -34,12 +35,24 @@ Rust toolchain (https://rustup.rs/) on both platforms.
 PREFIX=$HOME/.local ./install/linux.sh
 ```
 
-**Windows** (elevated PowerShell for machine-wide install, or `-PerUser`):
+**Windows — developer build** (elevated PowerShell, or `-PerUser`):
 
 ```powershell
 .\install\windows.ps1
 .\install\windows.ps1 -PerUser   # no admin; installs to %LOCALAPPDATA%
 ```
+
+**Windows — redistributable MSI** (for end users who don't have Rust):
+
+```powershell
+# One-time prerequisites: Rust + WiX Toolset 3.x + `cargo install cargo-wix`
+.\packaging\windows\build-msi.ps1
+# Output: launcher\target\wix\intifybrowser-<version>-x86_64.msi
+```
+
+The MSI installs `ifb.exe` to `%ProgramFiles%\intifybrowser\`, appends it to
+the system PATH, and registers in Add/Remove Programs. Source: `packaging/
+windows/main.wxs` (WiX 3 product definition, dual GUIDs pinned for upgrade).
 
 The Windows RAM-disk backend in `mount.rs` is currently stubbed — the binary
 installs cleanly but `ifb run` will bail until an ImDisk / in-proc backend
