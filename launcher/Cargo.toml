@@ -1,0 +1,79 @@
+[package]
+name = "intifybrowser-launcher"
+version = "0.1.0"
+edition = "2021"
+description = "Portable self-encrypting Chromium launcher (VeraCrypt-style vault)"
+license = "Apache-2.0"
+
+[lib]
+name = "intifybrowser_launcher"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ifb"
+path = "src/main.rs"
+
+[[bin]]
+name = "ifb-gui"
+path = "src/bin/ifb_gui.rs"
+required-features = ["gui"]
+
+[features]
+default = []
+gui = ["dep:eframe", "dep:egui", "dep:rfd", "dep:tar"]
+
+[dependencies]
+aes-gcm       = { version = "0.10", features = ["aes", "std"] }
+argon2        = { version = "0.5", features = ["std"] }
+blake3        = "1.5"
+rand          = "0.8"
+rand_core     = { version = "0.6", features = ["std"] }
+zeroize       = { version = "1.8", features = ["zeroize_derive"] }
+subtle        = "2.5"
+anyhow        = "1"
+thiserror     = "1"
+clap          = { version = "4", features = ["derive"] }
+rpassword     = "7"
+log           = "0.4"
+env_logger    = "0.11"
+
+# GUI-only deps (enabled by --features gui)
+eframe        = { version = "0.28", optional = true }
+egui          = { version = "0.28", optional = true }
+rfd           = { version = "0.14", optional = true }
+tar           = { version = "0.4",  optional = true }
+
+[target.'cfg(unix)'.dependencies]
+nix           = { version = "0.28", features = ["mount", "fs", "signal", "process", "mman"] }
+libc          = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys   = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# cargo-wix configuration. Run `cargo wix` from launcher/ to build the MSI;
+# see packaging/windows/main.wxs for the layout. Pinned options:
+#
+#   include      — path to the WiX source(s). Resolved relative to the
+#                  launcher/ crate directory.
+#   no-build     — false: cargo-wix will run `cargo build --release` first.
+#   compiler-args / linker-args — none; we want WiX defaults.
+#   eula / license — left to default (no dialog) until a LICENSE.rtf exists.
+#
+# The MSI lands at launcher/target/wix/intifybrowser-<version>-x86_64.msi.
+[package.metadata.wix]
+include = ["../packaging/windows/main.wxs"]
+output = "target/wix/intifybrowser-${version}-x86_64.msi"
+no-build = false

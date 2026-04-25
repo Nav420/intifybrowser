@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<!--
+  WiX source for the intifybrowser Windows MSI installer.
+
+  Build:  packaging\windows\build-installer.ps1
+  Output: launcher\target\wix\intifybrowser-<version>-x86_64.msi
+
+  The Upgrade Code is stable across versions — never change it.
+  Product Id is "*" so each build gets a fresh GUID for in-place upgrades.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+    <Product
+        Id="*"
+        Name="Intifybrowser"
+        Manufacturer="Nav420"
+        Version="$(var.Version)"
+        UpgradeCode="AAD6241B-41E5-4F3C-82FA-A6C2B2773B15"
+        Language="1033"
+        Codepage="1252">
+
+        <Package
+            Id="*"
+            Keywords="Installer"
+            Description="Intifybrowser encrypted browser launcher"
+            Manufacturer="Nav420"
+            InstallerVersion="500"
+            Languages="1033"
+            Compressed="yes"
+            InstallScope="perMachine"
+            SummaryCodepage="1252"/>
+
+        <MajorUpgrade
+            Schedule="afterInstallInitialize"
+            DowngradeErrorMessage="A newer version of Intifybrowser is already installed."/>
+
+        <Media Id="1" Cabinet="ifb.cab" EmbedCab="yes" CompressionLevel="high"/>
+
+        <!-- ================================================================
+             Directory layout
+             ================================================================ -->
+        <Directory Id="TARGETDIR" Name="SourceDir">
+
+            <!-- %ProgramFiles%\intifybrowser\ -->
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLDIR" Name="intifybrowser">
+
+                    <!-- CLI binary -->
+                    <Component Id="CliExecutable"
+                               Guid="CEC1D2BD-AC6B-4B55-80AF-7AEF3684DFE8"
+                               Win64="yes">
+                        <File Id="ifb.exe"
+                              Name="ifb.exe"
+                              DiskId="1"
+                              Source="$(var.CargoTargetBinDir)\ifb.exe"
+                              KeyPath="yes"/>
+                        <!-- Append install dir to PATH so `ifb` works from a shell -->
+                        <Environment Id="PATH"
+                                     Name="PATH"
+                                     Value="[INSTALLDIR]"
+                                     Permanent="no"
+                                     Part="last"
+                                     Action="set"
+                                     System="yes"/>
+                    </Component>
+
+                    <!-- GUI binary -->
+                    <Component Id="GuiExecutable"
+                               Guid="B3F1A2C4-7D8E-4F5A-9B6C-2E1D0A3B4C5D"
+                               Win64="yes">
+                        <File Id="ifb.gui.exe"
+                              Name="ifb-gui.exe"
+                              DiskId="1"
+                              Source="$(var.CargoTargetBinDir)\ifb-gui.exe"
+                              KeyPath="yes"/>
+                    </Component>
+
+                    <!-- README -->
+                    <Component Id="ReadmeFile"
+                               Guid="*"
+                               Win64="yes">
+                        <File Id="README.md"
+                              Name="README.md"
+                              DiskId="1"
+                              Source="$(var.CargoProjectRoot)\..\README.md"
+                              KeyPath="yes"/>
+                    </Component>
+
+                </Directory>
+            </Directory>
+
+            <!-- Start Menu shortcut -->
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ProgramMenuDir" Name="Intifybrowser">
+                    <Component Id="StartMenuShortcut"
+                               Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
+                               Win64="yes">
+                        <Shortcut Id="StartMenuLink"
+                                  Name="Intifybrowser"
+                                  Description="Open an encrypted browser vault"
+                                  Target="[INSTALLDIR]ifb-gui.exe"
+                                  WorkingDirectory="INSTALLDIR"/>
+                        <RemoveFolder Id="ProgramMenuDir" On="uninstall"/>
+                        <!-- KeyPath via registry so WiX can track this component -->
+                        <RegistryValue Root="HKCU"
+                                       Key="Software\intifybrowser"
+                                       Name="startmenu"
+                                       Type="integer"
+                                       Value="1"
+                                       KeyPath="yes"/>
+                    </Component>
+                </Directory>
+            </Directory>
+
+            <!-- Desktop shortcut -->
+            <Directory Id="DesktopFolder">
+                <Component Id="DesktopShortcut"
+                           Guid="F0E1D2C3-B4A5-9687-7865-4342211FEDCB"
+                           Win64="yes">
+                    <Shortcut Id="DesktopLink"
+                              Name="Intifybrowser"
+                              Description="Open an encrypted browser vault"
+                              Target="[INSTALLDIR]ifb-gui.exe"
+                              WorkingDirectory="INSTALLDIR"/>
+                    <RegistryValue Root="HKCU"
+                                   Key="Software\intifybrowser"
+                                   Name="desktop"
+                                   Type="integer"
+                                   Value="1"
+                                   KeyPath="yes"/>
+                </Component>
+            </Directory>
+
+        </Directory>
+
+        <!-- ================================================================
+             Feature set
+             ================================================================ -->
+        <Feature Id="Default"
+                 Title="Intifybrowser"
+                 Description="GUI launcher and CLI tool."
+                 Level="1"
+                 ConfigurableDirectory="INSTALLDIR"
+                 AllowAdvertise="no"
+                 Display="expand"
+                 Absent="disallow">
+            <ComponentRef Id="CliExecutable"/>
+            <ComponentRef Id="GuiExecutable"/>
+            <ComponentRef Id="ReadmeFile"/>
+            <ComponentRef Id="StartMenuShortcut"/>
+            <ComponentRef Id="DesktopShortcut"/>
+        </Feature>
+
+        <!-- ================================================================
+             Add/Remove Programs metadata
+             ================================================================ -->
+        <Property Id="ARPCOMMENTS"
+                  Value="Portable self-encrypting browser launcher (VeraCrypt-style vault)."/>
+        <Property Id="ARPURLINFOABOUT"
+                  Value="https://github.com/Nav420/intifybrowser"/>
+        <Property Id="ARPNOMODIFY" Value="1"/>
+        <Property Id="ARPNOREPAIR" Value="1"/>
+
+        <UIRef Id="WixUI_InstallDir"/>
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR"/>
+
+    </Product>
+</Wix>
