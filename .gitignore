@@ -6,3 +6,4 @@ Cargo.lock.bak
 .env
 .DS_Store
 .claude/
+packaging/windows/output/
