@@ -78,8 +78,8 @@ Name: "{group}\{#AppName}"; \
 Name: "{group}\Uninstall {#AppName}"; \
   Filename: "{uninstallexe}"
 
-; Desktop shortcut (opt-in)
-Name: "{commondesktop}\{#AppName}"; \
+; Desktop shortcut (opt-in) — use {userdesktop} so no admin rights are needed
+Name: "{userdesktop}\{#AppName}"; \
   Filename: "{app}\{#GuiExe}"; \
   Comment: "Open an encrypted browser vault"; \
   Tasks: desktopicon
